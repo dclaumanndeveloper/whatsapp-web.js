@@ -1128,10 +1128,16 @@ exports.LoadUtils = () => {
         // Always call internal downloadMedia - never skip based on
         // mediaStage, because cache eviction can leave stage=RESOLVED
         // with empty InMemoryMediaBlobCache.
+        // Explicitly forward the message's own mimetype: without it the
+        // internal DownloadManager can't determine the file type for
+        // messages it hasn't already cached (e.g. uncached images in
+        // group chats) and falls back to application/octet-stream,
+        // which the decoder then rejects with InvalidMediaFileType.
         await msg.downloadMedia({
             downloadEvenIfExpensive: true,
             rmrReason: 1,
             isUserInitiated: true,
+            mimetype: msg.mimetype,
         });
 
         if (

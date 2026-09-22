@@ -3236,7 +3236,16 @@ class Client extends EventEmitter {
             const chat =
                 window.require('WAWebCollections').Chat.get(chatWid) ??
                 (await window.require('WAWebCollections').Chat.find(chatWid));
-            if (chat?.endOfHistoryTransferType === 0) {
+            // endOfHistoryTransferType === 0 means "complete, but more
+            // messages remain on the primary device". A value of null means
+            // the field was never initialized (e.g. a chat WWebJS hasn't
+            // synced history for yet) and must be treated the same way,
+            // otherwise syncHistory() incorrectly reports false and the
+            // caller never requests the missing messages.
+            if (
+                chat?.endOfHistoryTransferType === 0 ||
+                chat?.endOfHistoryTransferType === null
+            ) {
                 await window
                     .require('WAWebSendNonMessageDataRequest')
                     .sendPeerDataOperationRequest(3, {
