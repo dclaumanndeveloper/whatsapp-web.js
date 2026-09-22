@@ -237,7 +237,19 @@ class Chat extends Base {
                     }
                 }
 
-                return msgs.map((m) => window.WWebJS.getMessageModel(m));
+                // Serialize defensively: a single message whose model can't
+                // be serialized (e.g. malformed data from an @lid
+                // participant) would otherwise reject the whole evaluate()
+                // call with an opaque, unrecoverable "t: t" Puppeteer error
+                // and callers would lose every other already-loaded message.
+                return msgs.reduce((acc, m) => {
+                    try {
+                        acc.push(window.WWebJS.getMessageModel(m));
+                    } catch (_) {
+                        // skip the message that failed to serialize
+                    }
+                    return acc;
+                }, []);
             },
             this.id._serialized,
             searchOptions,

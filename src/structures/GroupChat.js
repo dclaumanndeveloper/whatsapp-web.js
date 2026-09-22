@@ -574,9 +574,26 @@ class GroupChat extends Chat {
     async getInviteCode() {
         const codeRes = await this.client.pupPage.evaluate(async (chatId) => {
             try {
-                return await window
-                    .require('WAWebMexFetchGroupInviteCodeJob')
-                    .fetchMexGroupInviteCode(chatId);
+                const fetchGroupInviteCodeJob = window.require(
+                    'WAWebMexFetchGroupInviteCodeJob',
+                );
+                if (
+                    !fetchGroupInviteCodeJob ||
+                    typeof fetchGroupInviteCodeJob.fetchMexGroupInviteCode !==
+                        'function'
+                ) {
+                    // The module WhatsApp Web exposes this under can shift
+                    // between web app releases. Fail with a clear, catchable
+                    // error instead of the opaque "Cannot read properties of
+                    // undefined (reading 'fetchMexGroupInviteCode')" a bot
+                    // would otherwise crash on.
+                    throw new Error(
+                        'Unable to fetch the group invite code: the WAWebMexFetchGroupInviteCodeJob module is unavailable in this WhatsApp Web version.',
+                    );
+                }
+                return await fetchGroupInviteCodeJob.fetchMexGroupInviteCode(
+                    chatId,
+                );
             } catch (err) {
                 if (err.name === 'ServerStatusCodeError') return undefined;
                 throw err;
